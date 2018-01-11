@@ -6,10 +6,18 @@
 package de.google.translator.token;
 
 import de.google.translator.token.seed.GoogleTranslatorSeedFinder;
+import de.google.translator.util.JavascriptOperators;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -20,7 +28,7 @@ public class GoogleTranslatTokenator {
     
     private final GoogleTranslatorSeedFinder seedFinder = new GoogleTranslatorSeedFinder();
     
-    public String determineToken(String text) {
+    public String determineToken(String text) throws ScriptException {
         
         String seed =  seedFinder.determineCurrentSeed();
         
@@ -39,19 +47,19 @@ public class GoogleTranslatTokenator {
         }
         
         numericalSeedBeforePoint = compute(String.valueOf(numericalSeedBeforePoint), "+-3^+b+-f");
-        
-        numericalSeedBeforePoint ^= StringUtils.isEmpty(seed) && seed.contains(".") ? 0l : Long.parseLong(seedParts[1]);
+        long oldSeedDecimalPlace = StringUtils.isEmpty(seed) && seed.contains(".") ? 0l : Long.parseLong(seedParts[1]);
+        numericalSeedBeforePoint = JavascriptOperators.bitwiseXor(numericalSeedBeforePoint, oldSeedDecimalPlace) ;
 
-
-        if(numericalSeedBeforePoint > 0) {
+        //This does not correspond to the JS part: 0 > a && (a = (a & 2147483647) + 2147483648);
+        if(numericalSeedBeforePoint < 0) {
             
-            numericalSeedBeforePoint = (numericalSeedBeforePoint & 2147483647l) + 2147483648l;
+        	numericalSeedBeforePoint = JavascriptOperators.add(JavascriptOperators.bitwiseAnd(numericalSeedBeforePoint, 2147483647l), 2147483648l);
         }
         
         numericalSeedBeforePoint %= 1000000;
         
-        
-        return Long.toString(numericalSeedBeforePoint).concat(".").concat(Long.toString(numericalSeedBeforePoint ^ oldValueFromSeed ));
+        long newSeedDecimalPlace = JavascriptOperators.bitwiseXor(numericalSeedBeforePoint, oldValueFromSeed);
+        return Long.toString(numericalSeedBeforePoint).concat(".").concat(Long.toString(newSeedDecimalPlace));
     }
 
     private List<Integer> computeCharCodes(String text) {
@@ -95,8 +103,9 @@ public class GoogleTranslatTokenator {
      * @param numberAsText, normaly a Number like "4123231232"
      * @param computeString, "+-a^+6" or "+-3^+b+-f"
      * @return 
+     * @throws ScriptException 
      */
-    private long compute(String numberAsText, String computeString) {
+    private long compute(String numberAsText, String computeString) throws ScriptException {
 
         long number = Long.parseLong(numberAsText);
 
@@ -118,46 +127,96 @@ public class GoogleTranslatTokenator {
             }
             
             if(computeString.charAt(index + 1) == '+') {
-                charCode = number >>> charCode;
+            	charCode = JavascriptOperators.zeroFillRightShift(number, charCode);
             } else {
-                //!!!!! THis seems to be wrong: Difference between JAVA:1258990779 << 3 and JS:1258990779 << 3 
+            	
                 //Cause int and long primitive type
                 // ITS Problematic in JAVA because long is has more upper zeros so shift 3 from the right will create a bigger number
-                
-                charCode = number << charCode; 
-//                charCode = Math.toIntExact(number) << charCode; 
-
+            	// Solution: Use Nashorn JS-Engine
+            	
+            	charCode = JavascriptOperators.leftShift(number, charCode);
             }
             
-            number = computeString.charAt(index) == '+' ? number + charCode & 4294967295l : number ^ charCode;
+            if(computeString.charAt(index) == '+' ) {
+            	number = JavascriptOperators.bitwiseAnd(JavascriptOperators.add(number, charCode), 4294967295l);
+            } else {
+            	number = JavascriptOperators.bitwiseXor(number, charCode);
+            }
+
         }
-        
         return number;
     }
     
     
-    public static void main(String...args) {
+    public static void main(String...args) throws ScriptException {
         
         GoogleTranslatTokenator test = new GoogleTranslatTokenator();
         
-//        System.out.println(1258990779 ^ 4294967295l); 
-//        System.out.println(1258990779l ^ 4294967295l);
-//        
-//        System.out.println(1258990779 & 4294967295l); 
-//        System.out.println(1258990779l & 4294967295l); 
-//        
-//        System.out.println(1258990779 >> 3); 
-//        System.out.println(1258990779l >> 3); 
+        
+        //JS
+    	//3293726314 & 4294967295
+        //-1001240982
+        //JSBinary 
+        //3293726314	-> 11000100010100100100011001101010
+        //4294967295	-> 11111111111111111111111111111111	
+        //1001240982	-> 11000100010100100100011001101010
+        
+//        System.out.println(Long.toBinaryString(3293726314l));
+//        System.out.println(Long.toBinaryString(4294967295l));
+//        System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+//        System.out.println(Long.toBinaryString(Long.MAX_VALUE << 1 | 1));
+//        System.out.println(Long.toBinaryString(Long.MIN_VALUE + Long.MAX_VALUE));
 //
-        
-        
-        System.out.println(1258990779 << 3); //JS 1481991640
-        System.out.println(1258990779l << 3); //JS 1481991640
-        
-        System.out.println(Math.toIntExact(1258990779l) << 3); //JS 1481991640
-        
+//        
+//        System.out.println(Long.toBinaryString(3293726314l & 4294967295l));
+//        //Get highest bit an fill with bits from the right to match 63 bits at all
+//        
+//        BitSet longBitSet =  BitSet.valueOf(new long[] {3293726314l & 4294967295l});
+//        System.out.println(longBitSet.nextSetBit(0));
+//        System.out.println(longBitSet.nextSetBit(1));
+//        System.out.println(longBitSet.nextSetBit(12));
+////        longBitSet.set(62);
+////        longBitSet.set(61);
+//        
+//        ScriptEngine jsEngine = new ScriptEngineManager().getEngineByName("nashorn");
+//        Number result = Number.class.cast(jsEngine.eval("3293726314 & 4294967295"));
+//        System.out.println(result.longValue());
+//        
+//        
+//        System.out.println(Long.toBinaryString(longBitSet.toLongArray()[0])+ " das");
+//        
+//        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+//        Object tmp = engine.eval("1 + 1;");
+//        System.out.println("QUARK" + tmp);
+//        
+//        System.out.println(Long.toBinaryString(3293726314l & (Long.MAX_VALUE << 1 | 1)));
+//        System.out.println(Long.toBinaryString(-1001240982l >> 2) + " P");
+//        
+//        
+//        System.out.println(binaryStringToLong("1111111111111111111111111111111111000100010100100100011001101010"));
+//        System.out.println(binaryStringToLong("1111111111111111111111111111111100000000000000000000000000000000"));
+//        
+//        System.out.println(Integer.toBinaryString(-1001240982));
+
+
         System.out.println(test.determineToken("Hallo. Ich bin Max Mustermann und bin 25 Jahre alt. Ich freue mich."));
     }
     
+    public static int binaryStringToInteger(String binaryString) {
+    	
+    	if(!binaryString.matches("^[01]{32,32}")) {
+    		throw new IllegalArgumentException("The expected format of the string is: ^[01]{32,32} ");
+    	}
+    	
+    	return Integer.parseInt(binaryString, 2);
+    }
+    
+    public static long binaryStringToLong(String binaryString) {
+    	
+    	if(!binaryString.matches("^[01]{64,64}")) {
+    		throw new IllegalArgumentException("The expected format of the string is: ^[01]{64,64} ");
+    	}
+    	return Long.parseUnsignedLong(binaryString, 2);
+    }
             
 }

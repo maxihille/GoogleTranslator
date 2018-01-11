@@ -1,14 +1,16 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package de.google.translator;
 
 import de.google.translator.client.jersey.JerseyTranslatorClient;
 import de.google.translator.client.response.GsonResponeParser;
+import de.google.translator.sentence.strategy.AllInOneSplitStrategy;
+import de.google.translator.sentence.strategy.SentenceSplitStrategy;
+
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.script.ScriptException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -18,28 +20,73 @@ import javax.ws.rs.core.Response;
  */
 public class GoogleTranslatorImpl implements GoogleTranslator {
     
-    private final JerseyTranslatorClient translatorClient;
-
+    private final JerseyTranslatorClient translatorClient = new JerseyTranslatorClient("https://translate.google.com/translate_a/single", 
+            MediaType.APPLICATION_JSON_TYPE);
+    
+    private final SentenceSplitStrategy sentenceSplitStrategy;
+    
     public GoogleTranslatorImpl() {
-        this.translatorClient = new JerseyTranslatorClient("https://translate.googleapis.com/translate_a/single", 
-                            MediaType.APPLICATION_JSON_TYPE);
+        this.sentenceSplitStrategy = new AllInOneSplitStrategy();
+    }
+    
+    public GoogleTranslatorImpl(SentenceSplitStrategy sentenceSplitStrategy) {
+        this.sentenceSplitStrategy = sentenceSplitStrategy;
     }
 
     @Override
     public Optional<String> translate(Locale source, Locale target, String text) {
-        
-        Optional<Response> response = translatorClient.sendTranslateRequest(source, target, text);
-        return translateBase(response);
-    }
-
-    @Override
-    public Optional<String> translate(Locale target, String text) {
-
-        Optional<Response> response = translatorClient.sendTranslateRequest(target, text);
-        return translateBase(response);
+    	Optional<String> translation = doTranslation(source.getLanguage(), target.getLanguage(), text);
+    	return translation;
     }
     
-    private Optional<String> translateBase(Optional<Response> response) {
+    @Override
+    public Optional<String> translate(Locale target, String text) {
+    	Optional<String> translation = doTranslation("auto", target.getLanguage(), text);
+    	return translation;
+    }
+
+    /**
+     * 
+     * @param source
+     * @param target
+     * @param text
+     * @return
+     */
+	private Optional<String> doTranslation(String sourceLanguage, String targetLanguage, String text) {
+		
+		List<String> sentences = sentenceSplitStrategy.splitTextIntoSentences(text);
+    	
+    	List<String> translatedSentences = sentences.stream().<Optional<Response>> map(sentence -> {
+    		return determineTranslationResponse(sourceLanguage, targetLanguage, text);
+		}).map(response -> parseTranslationResponse(response)).map(Optional::get).collect(Collectors.toList());
+    	
+    	Optional<String> translation = Optional.of(translatedSentences.stream().collect(Collectors.joining()));
+		return translation;
+	}
+
+	/**
+	 * 
+	 * @param source
+	 * @param target
+	 * @param text
+	 * @return
+	 */
+	private Optional<Response> determineTranslationResponse(String sourceLanguage, String targetLanguage, String text) {
+		try {
+			return translatorClient.sendTranslateRequest(sourceLanguage, targetLanguage, text);
+
+		} catch (ScriptException e) {
+			//TODO Log
+			return Optional.empty();
+		}
+	}
+
+	/**
+	 * 
+	 * @param response
+	 * @return
+	 */
+    private Optional<String> parseTranslationResponse(Optional<Response> response) {
        
         if(!response.isPresent()) {
             return Optional.empty();

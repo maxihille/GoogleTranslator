@@ -5,8 +5,9 @@
  */
 package de.google.translator.client;
 
-import java.util.Locale;
 import java.util.Optional;
+
+import javax.script.ScriptException;
 import javax.ws.rs.core.Response;
 
 /**
@@ -14,9 +15,7 @@ import javax.ws.rs.core.Response;
  * @author maxi
  */
 public interface GoogleTranslatorClient extends AutoCloseable {
-    
-    public Optional<Response> sendTranslateRequest(Locale source, Locale target, String text);
-
-    public Optional<Response> sendTranslateRequest(Locale target, String text);
+	
+    public Optional<Response> sendTranslateRequest(String sourceLocaleLanguage, String targetLocaleLanguage, String text) throws ScriptException;
 
 }

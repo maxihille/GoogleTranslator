@@ -8,17 +8,21 @@ package de.google.translator.client.jersey;
 import de.google.translator.client.GoogleTranslatorClient;
 import de.google.translator.token.GoogleTranslatTokenator;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.script.ScriptException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.glassfish.jersey.logging.LoggingFeature;
+import org.glassfish.jersey.uri.UriComponent;
 
 /**
  *
@@ -49,18 +53,13 @@ public class JerseyTranslatorClient implements GoogleTranslatorClient {
         this.mimeType = mimeType;
     }
     
-    @Override
-    public Optional<Response> sendTranslateRequest(Locale target, String text) {
-        return sendTranslateRequestBase("auto", target.getLanguage(), text);
-    }
+	@Override
+	public Optional<Response> sendTranslateRequest(String sourceLocaleLanguage, String targetLocaleLanguage,
+			String text) throws ScriptException {
+      return sendTranslateRequestBase(sourceLocaleLanguage, targetLocaleLanguage, text);
+	}
     
-    @Override
-    public Optional<Response> sendTranslateRequest(Locale source, Locale target, String text) {
-        
-        return sendTranslateRequestBase(source.getLanguage(), target.getLanguage(), text);
-    }
-
-    private Optional<Response> sendTranslateRequestBase(String sourceLanguage, String targetLanguage, String text) {
+    private Optional<Response> sendTranslateRequestBase(String sourceLanguage, String targetLanguage, String text) throws ScriptException {
        
         WebTarget webTarget;
         try {
@@ -84,14 +83,19 @@ public class JerseyTranslatorClient implements GoogleTranslatorClient {
 
 
 
-    private WebTarget createWebTarget(String sourceLanguage, String targetLanguage, String text) throws UnsupportedEncodingException {
+    private WebTarget createWebTarget(String sourceLanguage, String targetLanguage, String text) throws UnsupportedEncodingException, ScriptException {
 
-        
+
+    	//TODO Disable/Enable Logging
+    	Logger logger = Logger.getLogger(getClass().getName());
+    	Feature feature = new LoggingFeature(logger, Level.INFO, null, null);
+    	client.register(feature);
+    	
         WebTarget webTarget = client.target(webResourceUri);
         webTarget = webTarget.queryParam("client", "t") 
                 .queryParam("sl", sourceLanguage)
                 .queryParam("tl", targetLanguage)
-                .queryParam("hl", targetLanguage)
+                .queryParam("hl", sourceLanguage)
                 
                 .queryParam("dt", "at")
                 .queryParam("dt", "bd")
@@ -108,13 +112,12 @@ public class JerseyTranslatorClient implements GoogleTranslatorClient {
                 .queryParam("oe", "UTF-8")
                 
                 .queryParam("source", "bh")
-//                .queryParam("otf", 1)
+                
                 .queryParam("ssel", 0)
                 .queryParam("tsel", 0)
                 .queryParam("kc", 1)
                 .queryParam("tk", new GoogleTranslatTokenator().determineToken(text))
-                
-                .queryParam("q", URLEncoder.encode(text, "UTF-8"));
+                .queryParam("q", UriComponent.encode(text, UriComponent.Type.QUERY_PARAM_SPACE_ENCODED));
         return webTarget;
     }
 
@@ -122,4 +125,6 @@ public class JerseyTranslatorClient implements GoogleTranslatorClient {
     public void close() {
         client.close();
     }
+
+
 }
