@@ -5,6 +5,8 @@
  */
 package de.google.translator;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Locale;
 
 import javax.script.ScriptException;
@@ -17,19 +19,23 @@ import org.junit.Test;
  */
 public class GoogleTranslatorUnitTest {
     
-//    Die Google Cloud Translation API kann dynamisch Text in Tausenden von Sprachpaaren übersetzen. Mit der Cloud Translation API können Websites und Programme den Übersetzungsdienst programmatisch integrieren."
+
+	
+	private final GoogleTranslatorImpl googleTranslator = new GoogleTranslatorImpl();
+	
+    @Test
+    public void testTranslateGermanToEnglishOneSentence() throws ScriptException {
+    	assertEquals("What will happen to him now?", googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Was wird jetzt aus ihm?").get());
+    	assertEquals("I am Max Mustermann.", googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Ich bin Max Mustermann.").get());
+    	assertEquals("The decline of the department store chain has long been apparent.", googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Der Niedergang der Kaufhauskette zeichnet sich seit Langem ab.").get());
+    	assertEquals("The business is now in the sixth generation in family ownership - with twelve tribes with around 1,800 relatives a complicated undertaking, which the Brenninkmeijers regard as a precious achievement.", googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Das Geschäft hält sich inzwischen in sechster Generation in Familienbesitz - bei zwölf Stämmen mit rund 1800 Angehörigen ein kompliziertes Unterfangen, was die Brenninkmeijers als kostbare Leistung betrachten.").get());
+    }
     
     @Test
-    public void testTranslatePositiveFrench() throws ScriptException {
-        
-        GoogleTranslatorImpl test = new GoogleTranslatorImpl();
-        
-//        https://translate.google.com/translate_a/single?client=t&sl=de&tl=en&hl=de&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&ie=UTF-8&oe=UTF-8&source=bh&ssel=0&tsel=0&kc=1&tk=493408.126452&q=Hallo.%20Ich%20bin%20Max%20Mustermann%20und%20bin%2025%20Jahre%20alt.%20Ich%20freue%20mich.
-
-//        System.out.println(test.translate(Locale.GERMAN, Locale.ENGLISH,"Hallo. Ich bin Max Mustermann und bin 25 Jahre alt. Ich freue mich."));
-        
-        System.out.println(test.translate(Locale.GERMAN, Locale.ENGLISH,"Was wird jetzt aus ihm?"));
-
-
+    public void testTranslateGermanToEnglishOneSentenceNoSourceLanguage() throws ScriptException {
+    	assertEquals(googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Was wird jetzt aus ihm?").get(), googleTranslator.translate(Locale.ENGLISH,"Was wird jetzt aus ihm?").get());
+    	assertEquals(googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Ich bin Max Mustermann.").get(), googleTranslator.translate(Locale.ENGLISH,"Ich bin Max Mustermann.").get());
+    	assertEquals(googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Der Niedergang der Kaufhauskette zeichnet sich seit Langem ab.").get(), googleTranslator.translate(Locale.ENGLISH,"Der Niedergang der Kaufhauskette zeichnet sich seit Langem ab.").get());
+    	assertEquals(googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Das Geschäft hält sich inzwischen in sechster Generation in Familienbesitz - bei zwölf Stämmen mit rund 1800 Angehörigen ein kompliziertes Unterfangen, was die Brenninkmeijers als kostbare Leistung betrachten.").get(), googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Das Geschäft hält sich inzwischen in sechster Generation in Familienbesitz - bei zwölf Stämmen mit rund 1800 Angehörigen ein kompliziertes Unterfangen, was die Brenninkmeijers als kostbare Leistung betrachten.").get());
     }
 }

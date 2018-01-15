@@ -8,14 +8,8 @@ package de.google.translator.token;
 import de.google.translator.token.seed.GoogleTranslatorSeedFinder;
 import de.google.translator.util.JavascriptOperators;
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -64,6 +58,9 @@ public class GoogleTranslatTokenator {
 
     private List<Integer> computeCharCodes(String text) {
         
+    	//TODO here goes something wrong, the first index which differs is the 10th
+    	//"ä" makes trouble
+    	
         List<Integer> charCodes = new ArrayList<>();
         
         for(int fIndex = 0, gIndex = 0; gIndex < text.length(); gIndex++) {
@@ -89,9 +86,9 @@ public class GoogleTranslatTokenator {
                         charCodes.add(fIndex++,  charCode >> 12 | 224);
                         charCodes.add(fIndex++,  charCode >> 6 & 63 | 128);
                     }
-                    
-                    charCodes.add(fIndex++,  charCode >> 6 & 63 | 128);
                 }
+                
+                charCodes.add(fIndex++,  charCode & 63 | 128);
             }
         }
         
@@ -109,9 +106,6 @@ public class GoogleTranslatTokenator {
 
         long number = Long.parseLong(numberAsText);
 
-        //TODO Integer.parsing to Long.parsing.
-        //Parameter Text shold be long 
-        
         for(int index=0; index < computeString.length() - 2; index = index + 3) {
             
             char thirdChar = computeString.charAt(index + 2);
@@ -146,77 +140,4 @@ public class GoogleTranslatTokenator {
         }
         return number;
     }
-    
-    
-    public static void main(String...args) throws ScriptException {
-        
-        GoogleTranslatTokenator test = new GoogleTranslatTokenator();
-        
-        
-        //JS
-    	//3293726314 & 4294967295
-        //-1001240982
-        //JSBinary 
-        //3293726314	-> 11000100010100100100011001101010
-        //4294967295	-> 11111111111111111111111111111111	
-        //1001240982	-> 11000100010100100100011001101010
-        
-//        System.out.println(Long.toBinaryString(3293726314l));
-//        System.out.println(Long.toBinaryString(4294967295l));
-//        System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-//        System.out.println(Long.toBinaryString(Long.MAX_VALUE << 1 | 1));
-//        System.out.println(Long.toBinaryString(Long.MIN_VALUE + Long.MAX_VALUE));
-//
-//        
-//        System.out.println(Long.toBinaryString(3293726314l & 4294967295l));
-//        //Get highest bit an fill with bits from the right to match 63 bits at all
-//        
-//        BitSet longBitSet =  BitSet.valueOf(new long[] {3293726314l & 4294967295l});
-//        System.out.println(longBitSet.nextSetBit(0));
-//        System.out.println(longBitSet.nextSetBit(1));
-//        System.out.println(longBitSet.nextSetBit(12));
-////        longBitSet.set(62);
-////        longBitSet.set(61);
-//        
-//        ScriptEngine jsEngine = new ScriptEngineManager().getEngineByName("nashorn");
-//        Number result = Number.class.cast(jsEngine.eval("3293726314 & 4294967295"));
-//        System.out.println(result.longValue());
-//        
-//        
-//        System.out.println(Long.toBinaryString(longBitSet.toLongArray()[0])+ " das");
-//        
-//        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-//        Object tmp = engine.eval("1 + 1;");
-//        System.out.println("QUARK" + tmp);
-//        
-//        System.out.println(Long.toBinaryString(3293726314l & (Long.MAX_VALUE << 1 | 1)));
-//        System.out.println(Long.toBinaryString(-1001240982l >> 2) + " P");
-//        
-//        
-//        System.out.println(binaryStringToLong("1111111111111111111111111111111111000100010100100100011001101010"));
-//        System.out.println(binaryStringToLong("1111111111111111111111111111111100000000000000000000000000000000"));
-//        
-//        System.out.println(Integer.toBinaryString(-1001240982));
-
-
-        System.out.println(test.determineToken("Hallo. Ich bin Max Mustermann und bin 25 Jahre alt. Ich freue mich."));
-    }
-    
-    public static int binaryStringToInteger(String binaryString) {
-    	
-    	if(!binaryString.matches("^[01]{32,32}")) {
-    		throw new IllegalArgumentException("The expected format of the string is: ^[01]{32,32} ");
-    	}
-    	
-    	return Integer.parseInt(binaryString, 2);
-    }
-    
-    public static long binaryStringToLong(String binaryString) {
-    	
-    	if(!binaryString.matches("^[01]{64,64}")) {
-    		throw new IllegalArgumentException("The expected format of the string is: ^[01]{64,64} ");
-    	}
-    	return Long.parseUnsignedLong(binaryString, 2);
-    }
-            
 }
