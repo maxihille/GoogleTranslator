@@ -19,7 +19,6 @@ import org.junit.Test;
  */
 public class GoogleTranslatorUnitTest {
     
-
 	
 	private final GoogleTranslatorImpl googleTranslator = new GoogleTranslatorImpl();
 	

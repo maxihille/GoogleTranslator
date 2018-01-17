@@ -5,14 +5,15 @@
  */
 package de.google.translator.token;
 
-import de.google.translator.token.seed.GoogleTranslatorSeedFinder;
-import de.google.translator.util.JavascriptOperators;
-
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.script.ScriptException;
 
 import org.apache.commons.lang3.StringUtils;
+
+import de.google.translator.token.seed.GoogleTranslatorSeedFinder;
+import de.google.translator.util.JavascriptOperators;
 
 /**
  *
@@ -58,9 +59,6 @@ public class GoogleTranslatTokenator {
 
     private List<Integer> computeCharCodes(String text) {
         
-    	//TODO here goes something wrong, the first index which differs is the 10th
-    	//"ä" makes trouble
-    	
         List<Integer> charCodes = new ArrayList<>();
         
         for(int fIndex = 0, gIndex = 0; gIndex < text.length(); gIndex++) {

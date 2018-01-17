@@ -37,7 +37,6 @@ public class JerseyTranslatorClient implements GoogleTranslatorClient {
 	// TODO Maven Javadoc
 	// TODO UTIL-Klasse für GET-Parameter
 	// TODO logging
-	// TODO Splitten in SLätze...zusammenhängende Kontexte um die nicht max-length
 	// der API zu verletzen
 
 	private final Client client = ClientBuilder.newClient();

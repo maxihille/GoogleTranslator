@@ -1,10 +1,5 @@
 package de.google.translator;
 
-import de.google.translator.client.jersey.JerseyTranslatorClient;
-import de.google.translator.client.response.GsonResponeParser;
-import de.google.translator.sentence.strategy.AllInOneSplitStrategy;
-import de.google.translator.sentence.strategy.SentenceSplitStrategy;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -14,12 +9,19 @@ import javax.script.ScriptException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import de.google.translator.client.jersey.JerseyTranslatorClient;
+import de.google.translator.client.response.GsonResponeParser;
+import de.google.translator.sentence.strategy.AllInOneSplitStrategy;
+import de.google.translator.sentence.strategy.SentenceSplitStrategy;
+
 /**
  *
  * @author maxi
  */
 public class GoogleTranslatorImpl implements GoogleTranslator {
-    
+	
+	// TODO Splitten in Sätze...zusammenhängende Kontexte um die nicht max-length
+
     private final JerseyTranslatorClient translatorClient = new JerseyTranslatorClient("https://translate.google.com/translate_a/single", 
             MediaType.APPLICATION_JSON_TYPE);
     
@@ -58,7 +60,7 @@ public class GoogleTranslatorImpl implements GoogleTranslator {
     	
     	List<String> translatedSentences = sentences.stream().<Optional<Response>> map(sentence -> {
     		return determineTranslationResponse(sourceLanguage, targetLanguage, text);
-		}).map(response -> parseTranslationResponse(response)).map(Optional::get).collect(Collectors.toList());
+		}).map(response -> parseAndCloseTranslationResponse(response)).map(Optional::get).collect(Collectors.toList());
     	
     	Optional<String> translation = Optional.of(translatedSentences.stream().collect(Collectors.joining()));
 		return translation;
@@ -86,14 +88,19 @@ public class GoogleTranslatorImpl implements GoogleTranslator {
 	 * @param response
 	 * @return
 	 */
-    private Optional<String> parseTranslationResponse(Optional<Response> response) {
+    private Optional<String> parseAndCloseTranslationResponse(Optional<Response> response) {
        
         if(!response.isPresent()) {
             return Optional.empty();
         }
 
         GsonResponeParser responseParser = new GsonResponeParser();
-        return responseParser.determineTranslation(response.get());
+        Response actualRespone = response.get();
+        Optional<String> translation =  responseParser.determineTranslation(actualRespone);
+        
+        actualRespone.close();
+        
+        return translation;
     }
     
     @Override
