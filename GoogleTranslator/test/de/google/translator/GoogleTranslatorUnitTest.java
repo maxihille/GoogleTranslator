@@ -37,4 +37,7 @@ public class GoogleTranslatorUnitTest {
     	assertEquals(googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Der Niedergang der Kaufhauskette zeichnet sich seit Langem ab.").get(), googleTranslator.translate(Locale.ENGLISH,"Der Niedergang der Kaufhauskette zeichnet sich seit Langem ab.").get());
     	assertEquals(googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Das Geschäft hält sich inzwischen in sechster Generation in Familienbesitz - bei zwölf Stämmen mit rund 1800 Angehörigen ein kompliziertes Unterfangen, was die Brenninkmeijers als kostbare Leistung betrachten.").get(), googleTranslator.translate(Locale.GERMAN, Locale.ENGLISH,"Das Geschäft hält sich inzwischen in sechster Generation in Familienbesitz - bei zwölf Stämmen mit rund 1800 Angehörigen ein kompliziertes Unterfangen, was die Brenninkmeijers als kostbare Leistung betrachten.").get());
     }
+    
+    //TODO Unit-Tests: English to German, French, Spain, Italy, Russian, Greece
+    
 }
